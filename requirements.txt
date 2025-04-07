@@ -1,4 +1,5 @@
-uvicorn
-fastapi
-yfinance
-pandas_ta
+fastapi>=0.109.0
+uvicorn>=0.29.0
+pandas_ta==0.3.14b0  # Last stable version
+numpy==1.24.4        # Compatible version
+pandas>=2.0.0
