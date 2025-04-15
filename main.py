@@ -1,7 +1,7 @@
 import base64
 from fastapi import FastAPI, Query, HTTPException
 # from fastapi.responses import StreamingResponse
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
@@ -15,6 +15,9 @@ from io import BytesIO
 import numpy as np
 from backend.backtest import run_backtest
 from fastapi.staticfiles import StaticFiles
+from backend.pattern_detector import (
+    PatternDetector,
+)  # Ensure this import matches your project structure
 import logging
 
 # Set up logging
@@ -808,3 +811,60 @@ async def backtest_endpoint(
     except Exception as e:
         logger.error(f"Error in backtest endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error running backtest: {str(e)}")
+
+
+# ✅ API Endpoints
+@app.get("/analyze_stock_pattern")
+async def analyze_stock(
+    ticker: str = Query(..., description="Stock ticker symbol (e.g., AAPL)"),
+    start_date: str = Query("2018-01-01", description="Start date (YYYY-MM-DD)"),
+    end_date: str = Query("2023-12-31", description="End date (YYYY-MM-DD)"),
+    period: str = Query('1y', description="Period"),
+    interval: str = Query("1d", description="Interval")
+):
+    """
+    Analyze stock data and return indicators and signals.
+
+    Args:
+        ticker (str): Stock ticker symbol (e.g., 'AAPL')
+        period (str, optional): Data period (e.g., '1y', '6mo'). Defaults to '1y'.
+        interval (str, optional): Data interval (e.g., '1d', '1h'). Defaults to '1d'.
+
+    Returns:
+        dict: Analysis results with data and signals.
+    """
+    try:
+        
+        analyzer = PatternDetector(ticker, period, interval)
+        results = analyzer.run_analysis()
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+@app.get("/plot_pattern/{ticker}")
+async def plot_stock(
+    ticker: str, period: Optional[str] = "1y", interval: Optional[str] = "1d"
+):
+    """
+    Generate and return a stock plot as a PNG image.
+
+    Args:
+        ticker (str): Stock ticker symbol (e.g., 'AAPL')
+        period (str, optional): Data period (e.g., '1y', '6mo'). Defaults to '1y'.
+        interval (str, optional): Data interval (e.g., '1d', '1h'). Defaults to '1d'.
+
+    Returns:
+        StreamingResponse: PNG image of the stock plot.
+    """
+    try:
+        analyzer = PatternDetector(ticker, period, interval)
+        analyzer.run_analysis()
+        plot_buf = analyzer.plot_results()
+        return StreamingResponse(
+            plot_buf,
+            media_type="image/png",
+            headers={"Content-Disposition": f"inline; filename={ticker}_plot.png"},
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Plot generation failed: {str(e)}")
