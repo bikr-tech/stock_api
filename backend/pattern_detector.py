@@ -9,7 +9,8 @@ import io
 import time
 import logging
 
-from stock_analysis_app.stock_api.backend.fetchYfinance import fetch_yfinance_data
+from ..backend.fetchYfinance import fetch_yfinance_data
+
 
 # ✅ Logging setup
 logging.basicConfig(
