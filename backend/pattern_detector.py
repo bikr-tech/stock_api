@@ -9,7 +9,7 @@ import io
 import time
 import logging
 
-from stock_analysis_app.stock_api.backend.fetchYfinance import fetch_yfinance_data
+from backend.fetchYfinance import fetch_yfinance_data
 
 
 # ✅ Logging setup
@@ -31,7 +31,9 @@ class PatternDetector:
     async def _download_data(self, retries=3, backoff_factor=2):
         for attempt in range(retries):
             try:
-                data = await fetch_yfinance_data(ticker, start_date, end_date)
+                end_date = pd.Timestamp.today()
+                start_date = end_date - pd.Timedelta(self.period)
+                data = await fetch_yfinance_data(self.ticker, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
 
                 if data is None or data.empty:
                     raise ValueError("Empty data returned from yfinance")
